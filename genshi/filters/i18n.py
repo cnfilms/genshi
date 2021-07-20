@@ -815,6 +815,15 @@ class Translator(DirectiveFactory):
                         text = value.strip()
                         if translate_attrs and name in include_attrs and text:
                             newval = gettext(text)
+                    elif type(value) == list:
+                        # Liste d expression
+                        try:
+                            expr = value[0][1]
+                            to_translate = list(extract_from_code(expr, GETTEXT_FUNCTIONS))
+                        except (AttributeError, IndexError):
+                            continue
+                        if len(to_translate) > 0:
+                            newval = gettext(to_translate[0][1])
                     else:
                         newval = list(
                             self(_ensure(value), ctxt, translate_text=False)
@@ -828,6 +837,13 @@ class Translator(DirectiveFactory):
 
                 yield kind, (tag, attrs), pos
 
+            elif translate_text and kind is EXPR:
+                to_translate = list(extract_from_code(data, GETTEXT_FUNCTIONS))
+                if len(to_translate) == 0:
+                    yield kind, data, pos
+                    continue
+                newval = gettext(to_translate[0][1])
+                yield TEXT, newval, pos
             elif translate_text and kind is TEXT:
                 text = data.strip()
                 if text:
